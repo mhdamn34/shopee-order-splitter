@@ -1,14 +1,18 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
-  plugins: [vue(), tailwindcss()],
-  base: './',
-  server: {
-    port: Number(import.meta.env.PORT) || 5173,
-  },
-  test: {
-    environment: 'jsdom',
-  },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    plugins: [vue(), tailwindcss()],
+    base: './',
+    server: {
+      port: Number(env.VITE_APP_PORT) || Ç,
+    },
+    test: {
+      environment: 'jsdom',
+    },
+  }
 })

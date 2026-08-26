@@ -1,15 +1,8 @@
-<script setup>
-import { rm } from '../lib/money.js'
-
-defineProps({
-  plan: { type: Object, required: true },
-  deliveryCents: { type: Number, required: true }
-})
-</script>
-
 <template>
   <section class="card @container/plan">
-    <h2 class="card-title">The plan</h2>
+    <h2 class="card-title">
+      The plan
+    </h2>
 
     <!-- The grand total leads, so it is the first thing on screen rather than
          something you scroll past the order cards to reach. -->
@@ -46,7 +39,9 @@ defineProps({
         class="order rounded-xl border border-line p-3"
       >
         <div class="mb-2 flex items-baseline justify-between">
-          <h3 class="text-[15px] font-semibold">Order {{ index + 1 }}</h3>
+          <h3 class="text-[15px] font-semibold">
+            Order {{ index + 1 }}
+          </h3>
           <span class="font-bold">{{ rm(order.total) }}</span>
         </div>
 
@@ -59,7 +54,10 @@ defineProps({
                  [&_span:first-child]:min-w-0 [&_span:first-child]:text-ink
                  [&_span:last-child]:shrink-0 [&_span:last-child]:whitespace-nowrap"
         >
-          <li v-for="(unit, u) in order.units" :key="u">
+          <li
+            v-for="(unit, u) in order.units"
+            :key="u"
+          >
             <span>
               {{ unit.label }}
               <em
@@ -78,14 +76,23 @@ defineProps({
           <div class="text-muted">
             <span>Subtotal</span><span>{{ rm(order.subtotal) }}</span>
           </div>
-          <div v-if="order.voucher" class="font-semibold text-good">
+          <div
+            v-if="order.voucher"
+            class="font-semibold text-good"
+          >
             <span>Voucher (min {{ rm(order.voucher.min) }})</span>
             <span>&minus;{{ rm(order.discount) }}</span>
           </div>
-          <div v-else class="text-muted italic">
+          <div
+            v-else
+            class="text-muted italic"
+          >
             <span>No voucher applied</span><span>&mdash;</span>
           </div>
-          <div v-if="order.freeDelivery" class="font-semibold text-good">
+          <div
+            v-if="order.freeDelivery"
+            class="font-semibold text-good"
+          >
             <span>Delivery free (min {{ rm(order.deliveryVoucher.min) }})</span>
             <span>&minus;{{ rm(order.deliveryDiscount) }}</span>
           </div>
@@ -98,7 +105,10 @@ defineProps({
               <span>Delivery</span><span>{{ rm(order.deliveryPaid) }}</span>
             </div>
           </template>
-          <div v-else class="text-muted">
+          <div
+            v-else
+            class="text-muted"
+          >
             <span>Delivery</span><span>{{ rm(deliveryCents) }}</span>
           </div>
         </div>
@@ -106,3 +116,12 @@ defineProps({
     </div>
   </section>
 </template>
+
+<script setup>
+import { rm } from '../lib/money.js'
+
+defineProps({
+  plan: { type: Object, required: true },
+  deliveryCents: { type: Number, required: true }
+})
+</script>

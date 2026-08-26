@@ -1,3 +1,14 @@
+<template>
+  <button
+    class="copy w-full cursor-pointer rounded-xl bg-accent p-3.5 font-bold text-white
+           active:opacity-85"
+    type="button"
+    @click="copy"
+  >
+    {{ copied ? 'Copied!' : 'Copy summary for WhatsApp' }}
+  </button>
+</template>
+
 <script setup>
 import { ref, onUnmounted } from 'vue'
 
@@ -50,14 +61,3 @@ onUnmounted(() => {
   if (resetTimer) clearTimeout(resetTimer)
 })
 </script>
-
-<template>
-  <button
-    class="copy w-full cursor-pointer rounded-xl bg-accent p-3.5 font-bold text-white
-           active:opacity-85"
-    type="button"
-    @click="copy"
-  >
-    {{ copied ? 'Copied!' : 'Copy summary for WhatsApp' }}
-  </button>
-</template>

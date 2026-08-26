@@ -1,24 +1,24 @@
-<script setup>
-import { rm, plural } from '../lib/money.js'
-
-defineProps({
-  rows: { type: Array, required: true }
-})
-
-const emit = defineEmits(['select'])
-</script>
-
 <template>
   <section class="card">
-    <h2 class="card-title">Compare splits</h2>
+    <h2 class="card-title">
+      Compare splits
+    </h2>
 
     <table class="w-full border-collapse text-sm">
       <thead>
         <tr class="[&>th]:px-1 [&>th]:py-2.5 [&>th]:text-right [&>th:first-child]:text-left">
-          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">Orders</th>
-          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">Discount</th>
-          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">Delivery</th>
-          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">Total</th>
+          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+            Orders
+          </th>
+          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+            Discount
+          </th>
+          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+            Delivery
+          </th>
+          <th class="text-[11px] font-semibold tracking-[0.04em] text-muted uppercase">
+            Total
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -45,14 +45,19 @@ const emit = defineEmits(['select'])
             <td>{{ rm(row.delivery) }}</td>
             <td>
               {{ rm(row.cost) }}
-              <span v-if="row.extra > 0" class="text-xs text-muted">
+              <span
+                v-if="row.extra > 0"
+                class="text-xs text-muted"
+              >
                 +{{ (row.extra / 100).toFixed(2) }}
               </span>
             </td>
           </template>
           <template v-else>
             <td>{{ plural(row.orderCount, 'order') }}</td>
-            <td colspan="3">needs {{ row.orderCount }} items</td>
+            <td colspan="3">
+              needs {{ row.orderCount }} items
+            </td>
           </template>
         </tr>
       </tbody>
@@ -64,3 +69,13 @@ const emit = defineEmits(['select'])
     </p>
   </section>
 </template>
+
+<script setup>
+import { rm, plural } from '../lib/money.js'
+
+defineProps({
+  rows: { type: Array, required: true }
+})
+
+const emit = defineEmits(['select'])
+</script>

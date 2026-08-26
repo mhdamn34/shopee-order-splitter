@@ -1,25 +1,8 @@
-<script setup>
-import { rm, people } from '../lib/money.js'
-
-defineProps({
-  plan: { type: Object, required: true }
-})
-
-// "Chicken Chop, Roti Bakar Set" reads better than a bare count when someone
-// ordered a few different things.
-function itemList (person) {
-  return person.units.map(unit => unit.label).join(', ')
-}
-
-function orderList (person) {
-  const label = person.orders.length === 1 ? 'order' : 'orders'
-  return `${label} ${person.orders.join(' + ')}`
-}
-</script>
-
 <template>
   <section class="card @container/people">
-    <h2 class="card-title">Who pays what</h2>
+    <h2 class="card-title">
+      Who pays what
+    </h2>
 
     <!-- A long payer list in a wide card wastes a lot of vertical space, so it
          splits into columns once the card is wide enough. -->
@@ -48,7 +31,9 @@ function orderList (person) {
             {{ rm(person.subtotal) }} · {{ orderList(person) }}
           </small>
         </div>
-        <div class="amt font-semibold whitespace-nowrap">{{ rm(person.pays) }}</div>
+        <div class="amt font-semibold whitespace-nowrap">
+          {{ rm(person.pays) }}
+        </div>
       </li>
     </ul>
 
@@ -61,3 +46,22 @@ function orderList (person) {
     </div>
   </section>
 </template>
+
+<script setup>
+import { rm, people } from '../lib/money.js'
+
+defineProps({
+  plan: { type: Object, required: true }
+})
+
+// "Chicken Chop, Roti Bakar Set" reads better than a bare count when someone
+// ordered a few different things.
+function itemList (person) {
+  return person.units.map(unit => unit.label).join(', ')
+}
+
+function orderList (person) {
+  const label = person.orders.length === 1 ? 'order' : 'orders'
+  return `${label} ${person.orders.join(' + ')}`
+}
+</script>
