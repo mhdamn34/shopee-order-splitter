@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue(), tailwindcss()],
     base: './',
     server: {
-      port: Number(env.VITE_APP_PORT) || Ç,
+      port: Number(env.VITE_APP_PORT) || 5173,
     },
     test: {
       environment: 'jsdom',
