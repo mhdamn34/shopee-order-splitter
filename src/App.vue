@@ -97,7 +97,12 @@
             :delivery-cents="run.deliveryCents"
           />
           <PeopleSplit :plan="plan" />
-          <CopySummaryButton :text="summary" />
+          <ShareActions
+            :plan="plan"
+            :text="summary"
+            :qr-image="qrImage"
+            :qr-payee="qrPayee"
+          />
         </template>
       </div>
     </div>
@@ -115,7 +120,7 @@ import SplitComparison from "./components/SplitComparison.vue";
 import NearMissWarning from "./components/NearMissWarning.vue";
 import PlanView from "./components/PlanView.vue";
 import PeopleSplit from "./components/PeopleSplit.vue";
-import CopySummaryButton from "./components/CopySummaryButton.vue";
+import ShareActions from "./components/ShareActions.vue";
 
 const {
   deliveryFee,

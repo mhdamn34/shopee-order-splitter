@@ -6,6 +6,7 @@ import ItemsEditor from '../src/components/ItemsEditor.vue'
 import SplitComparison from '../src/components/SplitComparison.vue'
 import NearMissWarning from '../src/components/NearMissWarning.vue'
 import PaymentQr from '../src/components/PaymentQr.vue'
+import ShareActions from '../src/components/ShareActions.vue'
 import { useSplitter } from '../src/composables/useSplitter.js'
 import { STATE_KEY, SCHEMA_VERSION } from '../src/lib/storage.js'
 
@@ -316,5 +317,53 @@ describe('PaymentQr', () => {
   it('says plainly that the QR never leaves the browser', () => {
     const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
     expect(wrapper.text()).toContain('never uploaded')
+  })
+})
+
+describe('ShareActions', () => {
+  const plan = {
+    orderCount: 2,
+    grandTotal: 5000,
+    flatRate: 25,
+    persons: [{ label: 'Ali', pays: 2500 }, { label: 'Siti', pays: 2500 }]
+  }
+  const props = { plan, text: 'summary', qrImage: '', qrPayee: '' }
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('offers to share when the browser can share files', async () => {
+    vi.stubGlobal('navigator', { share: () => {}, canShare: () => true })
+    const wrapper = mount(ShareActions, { props })
+    await nextTick()
+    expect(wrapper.find('.share-image').text()).toBe('Share summary image')
+  })
+
+  it('names the QR in the label once one is attached', async () => {
+    vi.stubGlobal('navigator', { share: () => {}, canShare: () => true })
+    const wrapper = mount(ShareActions, {
+      props: { ...props, qrImage: 'data:image/png;base64,x' }
+    })
+    await nextTick()
+    expect(wrapper.find('.share-image').text()).toBe('Share summary + QR')
+  })
+
+  it('falls back to copying when sharing is unavailable', async () => {
+    vi.stubGlobal('navigator', { clipboard: { write: () => {} } })
+    vi.stubGlobal('ClipboardItem', class {})
+    const wrapper = mount(ShareActions, { props })
+    await nextTick()
+    expect(wrapper.find('.share-image').text()).toBe('Copy summary image')
+  })
+
+  it('falls back to saving when neither is available', async () => {
+    vi.stubGlobal('navigator', {})
+    const wrapper = mount(ShareActions, { props })
+    await nextTick()
+    expect(wrapper.find('.share-image').text()).toBe('Save summary image')
+  })
+
+  it('keeps the plain-text copy alongside the image', () => {
+    const wrapper = mount(ShareActions, { props })
+    expect(wrapper.find('.copy').exists()).toBe(true)
   })
 })
