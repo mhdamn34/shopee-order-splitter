@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Voucher Stack Tile</title>
+  <rect id="tile" width="512" height="512" rx="112" fill="#ee4d2d"/>
+  <g id="icon" transform="translate(0 -10)" fill="#ffffff" stroke="#ee4d2d" stroke-width="18">
+    <path id="ticket-back" transform="translate(256 176) rotate(-9)"
+      d="M-118 -55 L118 -55 Q140 -55 140 -33 L140 -22 A22 22 0 0 0 140 22 L140 33 Q140 55 118 55 L-118 55 Q-140 55 -140 33 L-140 22 A22 22 0 0 1 -140 -22 L-140 -33 Q-140 -55 -118 -55 Z"/>
+    <path id="ticket-mid" transform="translate(256 260) rotate(-3)"
+      d="M-118 -55 L118 -55 Q140 -55 140 -33 L140 -22 A22 22 0 0 0 140 22 L140 33 Q140 55 118 55 L-118 55 Q-140 55 -140 33 L-140 22 A22 22 0 0 1 -140 -22 L-140 -33 Q-140 -55 -118 -55 Z"/>
+    <path id="ticket-front" transform="translate(256 344) rotate(4)"
+      d="M-118 -55 L118 -55 Q140 -55 140 -33 L140 -22 A22 22 0 0 0 140 22 L140 33 Q140 55 118 55 L-118 55 Q-140 55 -140 33 L-140 22 A22 22 0 0 1 -140 -22 L-140 -33 Q-140 -55 -118 -55 Z"/>
+  </g>
+</svg>
