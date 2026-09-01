@@ -7,6 +7,7 @@ import SplitComparison from '../src/components/SplitComparison.vue'
 import NearMissWarning from '../src/components/NearMissWarning.vue'
 import PaymentQr from '../src/components/PaymentQr.vue'
 import ShareActions from '../src/components/ShareActions.vue'
+import QrCropper from '../src/components/QrCropper.vue'
 import { useSplitter } from '../src/composables/useSplitter.js'
 import { STATE_KEY, SCHEMA_VERSION } from '../src/lib/storage.js'
 
@@ -323,6 +324,32 @@ describe('PaymentQr', () => {
     expect(wrapper.emitted('update')).toEqual([['payee', 'Amin']])
   })
 
+  it('opens the cropper on a picked file instead of storing it straight away', async () => {
+    vi.stubGlobal('URL', { ...URL, createObjectURL: () => 'blob:fake', revokeObjectURL: () => {} })
+    const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
+
+    const file = new File(['x'], 'qr.png', { type: 'image/png' })
+    const input = wrapper.find('input[type="file"]')
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+
+    expect(wrapper.findComponent(QrCropper).exists()).toBe(true)
+    expect(wrapper.emitted('update')).toBeUndefined()
+    vi.unstubAllGlobals()
+  })
+
+  it('rejects a file that is not an image, without opening the cropper', async () => {
+    const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
+
+    const file = new File(['x'], 'notes.pdf', { type: 'application/pdf' })
+    const input = wrapper.find('input[type="file"]')
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+
+    expect(wrapper.find('.qr-error').text()).toBe('That is not an image file.')
+    expect(wrapper.findComponent(QrCropper).exists()).toBe(false)
+  })
+
   it('says plainly that the QR never leaves the browser', () => {
     const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
     expect(wrapper.text()).toContain('never uploaded')
@@ -374,5 +401,55 @@ describe('ShareActions', () => {
   it('keeps the plain-text copy alongside the image', () => {
     const wrapper = mount(ShareActions, { props })
     expect(wrapper.find('.copy').exists()).toBe(true)
+  })
+})
+
+describe('QrCropper', () => {
+  // jsdom does not decode images, so the intrinsic size is stubbed on the
+  // element before the load event is dispatched.
+  function mountLoaded (natural = { width: 1000, height: 500 }, displayWidth = 300) {
+    const wrapper = mount(QrCropper, { props: { src: 'blob:fake' }, attachTo: document.body })
+    const img = wrapper.find('.crop-image').element
+    Object.defineProperty(img, 'naturalWidth', { value: natural.width, configurable: true })
+    Object.defineProperty(img, 'naturalHeight', { value: natural.height, configurable: true })
+    Object.defineProperty(img, 'clientWidth', { value: displayWidth, configurable: true })
+    return { wrapper, img }
+  }
+
+  it('hides the box until the image reports its size', () => {
+    const wrapper = mount(QrCropper, { props: { src: 'blob:fake' } })
+    expect(wrapper.find('.crop-box').exists()).toBe(false)
+  })
+
+  it('opens on the largest centred square', async () => {
+    const { wrapper } = mountLoaded()
+    await wrapper.find('.crop-image').trigger('load')
+
+    const box = wrapper.find('.crop-box')
+    expect(box.exists()).toBe(true)
+    // 1000x500 natural shown 300 wide -> scale 0.3, square of 500 -> 150px at x=250.
+    expect(box.attributes('style')).toContain('left: 75px')
+    expect(box.attributes('style')).toContain('width: 150px')
+  })
+
+  it('offers a handle on each corner', async () => {
+    const { wrapper } = mountLoaded()
+    await wrapper.find('.crop-image').trigger('load')
+    expect(wrapper.findAll('.handle')).toHaveLength(4)
+  })
+
+  it('emits cancel', async () => {
+    const wrapper = mount(QrCropper, { props: { src: 'blob:fake' } })
+    await wrapper.find('.crop-cancel').trigger('click')
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
+  })
+
+  // jsdom has no 2d context, so cropping throws - the component must fall back
+  // rather than leave the user stuck on a dead cropper.
+  it('cancels rather than hanging when the crop cannot be drawn', async () => {
+    const { wrapper } = mountLoaded()
+    await wrapper.find('.crop-image').trigger('load')
+    await wrapper.find('.crop-use').trigger('click')
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 })
