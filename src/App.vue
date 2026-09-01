@@ -1,7 +1,15 @@
 <template>
   <main class="mx-auto max-w-[560px] md:max-w-[1400px]">
     <header class="masthead">
-      <h1 class="mb-1 text-center font-bold tracking-[-0.01em] md:text-[25px]">
+      <h1
+        class="mb-1 flex items-center justify-center gap-2 text-center font-bold
+               tracking-[-0.01em] md:text-[25px]"
+      >
+        <img
+          class="mark h-7 w-7"
+          :src="logoSrc"
+          alt=""
+        >
         Shopee Order Splitter
       </h1>
       <p class="sub mb-4.5 text-center text-muted">
@@ -19,9 +27,12 @@
           :unit-count="unitCount"
           :food-total="foodTotal"
           :payer-count="payerCount"
+          :is-example="isExample"
           @update="updateItem"
           @add="addItem"
           @remove="removeItem"
+          @clear="clearItems"
+          @load-example="loadExample"
         />
 
         <div
@@ -63,11 +74,24 @@
             </template>
           </VoucherEditor>
         </div>
+
+        <PaymentQr
+          :image="qrImage"
+          :payee="qrPayee"
+          @update="setQr"
+        />
       </div>
 
       <div class="column-output @container/output">
         <p class="status mx-0.5 mb-3.5 text-xs text-muted">
           {{ status }}
+        </p>
+
+        <p
+          v-if="persistFailed"
+          class="persist-warn mx-0.5 mb-3.5 text-xs text-warn"
+        >
+          Couldn't save on this device — your basket will not be remembered.
         </p>
 
         <template v-if="plan">
@@ -81,7 +105,12 @@
             :delivery-cents="run.deliveryCents"
           />
           <PeopleSplit :plan="plan" />
-          <CopySummaryButton :text="summary" />
+          <ShareActions
+            :plan="plan"
+            :text="summary"
+            :qr-image="qrImage"
+            :qr-payee="qrPayee"
+          />
         </template>
       </div>
     </div>
@@ -94,11 +123,12 @@ import { useSplitter } from "./composables/useSplitter.js";
 import { buildSummary } from "./lib/plan.js";
 import ItemsEditor from "./components/ItemsEditor.vue";
 import VoucherEditor from "./components/VoucherEditor.vue";
+import PaymentQr from "./components/PaymentQr.vue";
 import SplitComparison from "./components/SplitComparison.vue";
 import NearMissWarning from "./components/NearMissWarning.vue";
 import PlanView from "./components/PlanView.vue";
 import PeopleSplit from "./components/PeopleSplit.vue";
-import CopySummaryButton from "./components/CopySummaryButton.vue";
+import ShareActions from "./components/ShareActions.vue";
 
 const {
   deliveryFee,
@@ -106,6 +136,10 @@ const {
   vouchers,
   deliveryVouchers,
   solving,
+  isExample,
+  persistFailed,
+  qrImage,
+  qrPayee,
   run,
   plan,
   comparison,
@@ -115,6 +149,9 @@ const {
   updateItem,
   addItem,
   removeItem,
+  clearItems,
+  loadExample,
+  setQr,
   updateVoucher,
   addVoucher,
   removeVoucher,
@@ -123,6 +160,10 @@ const {
   removeDeliveryVoucher,
   selectOrderCount,
 } = useSplitter();
+
+// public/ assets are reached through BASE_URL so the app survives being hosted
+// on a sub-path.
+const logoSrc = `${import.meta.env.BASE_URL}favicon.svg`
 
 const status = computed(() => {
   if (solving.value) return "Working out the cheapest split…";
