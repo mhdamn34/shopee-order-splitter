@@ -129,6 +129,15 @@ describe('NearMissWarning', () => {
 })
 
 describe('App', () => {
+  // App now hydrates from storage, so these must start from a known-empty one
+  // rather than depending on which tests ran before them.
+  beforeEach(() => localStorage.clear())
+
+  it('shows the logo beside the heading', () => {
+    const wrapper = mount(App)
+    expect(wrapper.find('.mark').attributes('src')).toContain('favicon.svg')
+  })
+
   it('solves the default basket on mount and shows the three-order plan', () => {
     const wrapper = mount(App)
     expect(wrapper.findAll('.order')).toHaveLength(3)

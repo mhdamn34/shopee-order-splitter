@@ -4,6 +4,7 @@ export const CARD_WIDTH = 720
 export const CARD_SCALE = 2
 export const CARD_PAD = 40
 export const CARD_ROW_PITCH = 44
+export const CARD_FOOTER_LOGO = 26
 
 const TITLE_SIZE = 30
 const ROW_SIZE = 21
@@ -76,8 +77,15 @@ export function layoutCard (plan, options = {}) {
   }
 
   y += 22
-  blocks.push({ kind: 'footer', y, text: 'Split with Shopee Order Splitter' })
-  y += FOOTER_SIZE
+  blocks.push({
+    kind: 'footer',
+    y,
+    text: 'Split with Shopee Order Splitter',
+    logoSize: CARD_FOOTER_LOGO
+  })
+  // The logo is taller than the footer text, so the taller of the two sets the
+  // row height - otherwise the mark runs through the bottom padding.
+  y += Math.max(FOOTER_SIZE, CARD_FOOTER_LOGO)
 
   return { width: CARD_WIDTH, height: Math.ceil(y + CARD_PAD), blocks }
 }
@@ -101,7 +109,8 @@ export function truncateToWidth (text, maxWidth, measure) {
   return low > 0 ? text.slice(0, low) + '…' : '…'
 }
 
-export function drawCard (layout, ctx, qrElement = null) {
+export function drawCard (layout, ctx, images = {}) {
+  const { qr = null, logo = null } = images
   const left = CARD_PAD
   const right = layout.width - CARD_PAD
   const centre = layout.width / 2
@@ -146,11 +155,11 @@ export function drawCard (layout, ctx, qrElement = null) {
     }
 
     if (block.kind === 'qr') {
-      if (!qrElement) return
+      if (!qr) return
       // A quiet zone in white, in case the QR image is tightly cropped.
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(block.x - 10, block.y - 10, block.size + 20, block.size + 20)
-      ctx.drawImage(qrElement, block.x, block.y, block.size, block.size)
+      ctx.drawImage(qr, block.x, block.y, block.size, block.size)
       return
     }
 
@@ -172,9 +181,17 @@ export function drawCard (layout, ctx, qrElement = null) {
 
     if (block.kind === 'footer') {
       ctx.font = `400 ${FOOTER_SIZE}px ${FONT}`
-      ctx.textAlign = 'center'
       ctx.fillStyle = CARD_COLORS.muted
-      ctx.fillText(block.text, centre, block.y)
+      ctx.textAlign = 'left'
+
+      // Logo and text are centred as one unit, so the pair stays balanced
+      // whether or not the mark loaded.
+      const gap = 10
+      const lead = logo ? block.logoSize + gap : 0
+      const startX = centre - (lead + ctx.measureText(block.text).width) / 2
+
+      if (logo) ctx.drawImage(logo, startX, block.y, block.logoSize, block.logoSize)
+      ctx.fillText(block.text, startX + lead, block.y + (block.logoSize - FOOTER_SIZE) / 2)
     }
   })
 }
@@ -192,7 +209,7 @@ export function renderCardPngDataUrl (plan, options = {}) {
 
   const ctx = canvas.getContext('2d')
   ctx.scale(CARD_SCALE, CARD_SCALE)
-  drawCard(layout, ctx, options.qrElement ?? null)
+  drawCard(layout, ctx, { qr: options.qrElement ?? null, logo: options.logoElement ?? null })
 
   return canvas.toDataURL('image/png')
 }

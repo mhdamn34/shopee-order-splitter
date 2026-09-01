@@ -50,8 +50,15 @@ const imageLabel = computed(() => {
   return `Save ${what}`
 })
 
-// Decoded ahead of time so the click handler stays synchronous.
+// Both images are decoded ahead of time so the click handler stays synchronous.
 const qrElement = ref(null)
+const logoElement = ref(null)
+
+onMounted(() => {
+  const image = new Image()
+  image.onload = () => { logoElement.value = image }
+  image.src = `${import.meta.env.BASE_URL}favicon.svg`
+})
 
 watch(() => props.qrImage, source => {
   if (!source) {
@@ -85,7 +92,8 @@ function onImage () {
     const dataUrl = renderCardPngDataUrl(props.plan, {
       qrImage: props.qrImage,
       qrPayee: props.qrPayee,
-      qrElement: qrElement.value
+      qrElement: qrElement.value,
+      logoElement: logoElement.value
     })
     file = new File([dataUrlToBlob(dataUrl)], filename(), { type: 'image/png' })
   } catch {

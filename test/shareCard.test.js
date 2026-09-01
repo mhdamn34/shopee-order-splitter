@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  CARD_WIDTH, CARD_ROW_PITCH,
+  CARD_WIDTH, CARD_ROW_PITCH, CARD_PAD, CARD_FOOTER_LOGO,
   layoutCard, truncateToWidth, dataUrlToBlob
 } from '../src/lib/shareCard.js'
 
@@ -47,6 +47,20 @@ describe('layoutCard', () => {
       expect(block.y).toBeGreaterThanOrEqual(0)
       expect(block.y).toBeLessThan(layout.height)
     })
+  })
+
+  it('reserves room beside the footer for the logo', () => {
+    expect(CARD_FOOTER_LOGO).toBeGreaterThan(0)
+    const footer = layoutCard(plan(2)).blocks.find(b => b.kind === 'footer')
+    expect(footer.logoSize).toBe(CARD_FOOTER_LOGO)
+  })
+
+  // The logo is taller than the footer text, so growing y by the text size
+  // alone would push it through the bottom padding.
+  it('leaves room below the footer for the full height of the logo', () => {
+    const layout = layoutCard(plan(2))
+    const footer = layout.blocks.find(b => b.kind === 'footer')
+    expect(footer.y + footer.logoSize + CARD_PAD).toBeLessThanOrEqual(layout.height)
   })
 
   it('formats amounts as ringgit and titles the order count', () => {

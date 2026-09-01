@@ -1,3 +1,5 @@
+<img src="public/apple-touch-icon.png" width="72" alt="">
+
 # Shopee Order Splitter
 
 Shopee vouchers have minimum spends, so one big food order usually only gets to

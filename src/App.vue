@@ -1,7 +1,15 @@
 <template>
   <main class="mx-auto max-w-[560px] md:max-w-[1400px]">
     <header class="masthead">
-      <h1 class="mb-1 text-center font-bold tracking-[-0.01em] md:text-[25px]">
+      <h1
+        class="mb-1 flex items-center justify-center gap-2 text-center font-bold
+               tracking-[-0.01em] md:text-[25px]"
+      >
+        <img
+          class="mark h-7 w-7"
+          :src="logoSrc"
+          alt=""
+        >
         Shopee Order Splitter
       </h1>
       <p class="sub mb-4.5 text-center text-muted">
@@ -152,6 +160,10 @@ const {
   removeDeliveryVoucher,
   selectOrderCount,
 } = useSplitter();
+
+// public/ assets are reached through BASE_URL so the app survives being hosted
+// on a sub-path.
+const logoSrc = `${import.meta.env.BASE_URL}favicon.svg`
 
 const status = computed(() => {
   if (solving.value) return "Working out the cheapest split…";
