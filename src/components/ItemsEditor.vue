@@ -6,6 +6,13 @@
       Items
     </h2>
 
+    <p
+      v-if="isExample"
+      class="example-note mb-2.5 rounded-[10px] bg-accent-soft px-3 py-2.5 text-[13px] text-accent"
+    >
+      This is an example basket — <strong>Clear items</strong> to enter your own.
+    </p>
+
     <div
       ref="rowList"
       class="rows flex flex-col gap-2"
@@ -88,6 +95,25 @@
     <p class="hint">
       {{ summary }}
     </p>
+
+    <div class="tools mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+      <button
+        v-if="hasContent"
+        class="clear cursor-pointer text-muted underline underline-offset-2 hover:text-accent"
+        type="button"
+        @click="emit('clear')"
+      >
+        Clear items
+      </button>
+      <button
+        class="example cursor-pointer text-muted underline underline-offset-2 hover:text-accent"
+        type="button"
+        @click="emit('load-example')"
+      >
+        Load example
+      </button>
+    </div>
+
     <p class="hint">
       The name is optional. Give two rows the same name and they become one
       payment; leave it blank and each one is billed on its own.
@@ -103,10 +129,16 @@ const props = defineProps({
   items: { type: Array, required: true },
   unitCount: { type: Number, required: true },
   foodTotal: { type: Number, required: true },
-  payerCount: { type: Number, default: 0 }
+  payerCount: { type: Number, default: 0 },
+  isExample: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update', 'add', 'remove'])
+const emit = defineEmits(['update', 'add', 'remove', 'clear', 'load-example'])
+
+// A Clear button over an already-empty basket is noise.
+const hasContent = computed(() =>
+  props.items.some(item => item.name || item.who || item.price)
+)
 
 const summary = computed(() => {
   if (props.unitCount === 0) return 'Add an item to get started.'

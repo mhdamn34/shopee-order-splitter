@@ -19,9 +19,12 @@
           :unit-count="unitCount"
           :food-total="foodTotal"
           :payer-count="payerCount"
+          :is-example="isExample"
           @update="updateItem"
           @add="addItem"
           @remove="removeItem"
+          @clear="clearItems"
+          @load-example="loadExample"
         />
 
         <div
@@ -70,6 +73,13 @@
           {{ status }}
         </p>
 
+        <p
+          v-if="persistFailed"
+          class="persist-warn mx-0.5 mb-3.5 text-xs text-warn"
+        >
+          Couldn't save on this device — your basket will not be remembered.
+        </p>
+
         <template v-if="plan">
           <SplitComparison
             :rows="comparison"
@@ -106,6 +116,8 @@ const {
   vouchers,
   deliveryVouchers,
   solving,
+  isExample,
+  persistFailed,
   run,
   plan,
   comparison,
@@ -115,6 +127,8 @@ const {
   updateItem,
   addItem,
   removeItem,
+  clearItems,
+  loadExample,
   updateVoucher,
   addVoucher,
   removeVoucher,

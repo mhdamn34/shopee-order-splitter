@@ -31,6 +31,27 @@ describe('ItemsEditor', () => {
     expect(items[0]).toEqual({ name: 'Teh Ais', who: '', price: '4.50', qty: '2' })
   })
 
+  it('shows the example note only when the basket is the example', () => {
+    expect(mount(ItemsEditor, { props }).find('.example-note').exists()).toBe(false)
+    const seeded = mount(ItemsEditor, { props: { ...props, isExample: true } })
+    expect(seeded.find('.example-note').exists()).toBe(true)
+  })
+
+  it('offers Clear items only when there is something to clear', () => {
+    const empty = [{ name: '', who: '', price: '', qty: '1' }]
+    const blank = mount(ItemsEditor, { props: { ...props, items: empty, unitCount: 0, foodTotal: 0 } })
+    expect(blank.find('.clear').exists()).toBe(false)
+    expect(mount(ItemsEditor, { props }).find('.clear').exists()).toBe(true)
+  })
+
+  it('emits clear and load-example', async () => {
+    const wrapper = mount(ItemsEditor, { props })
+    await wrapper.find('.clear').trigger('click')
+    await wrapper.find('.example').trigger('click')
+    expect(wrapper.emitted('clear')).toHaveLength(1)
+    expect(wrapper.emitted('load-example')).toHaveLength(1)
+  })
+
   it('emits add and remove', async () => {
     const wrapper = mount(ItemsEditor, { props })
     await wrapper.find('.add').trigger('click')
