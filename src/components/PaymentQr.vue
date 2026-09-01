@@ -4,8 +4,15 @@
       Your payment QR
     </h2>
 
+    <QrCropper
+      v-if="cropSrc"
+      :src="cropSrc"
+      @crop="onCrop"
+      @cancel="closeCropper"
+    />
+
     <div
-      v-if="!image"
+      v-else-if="!image"
       class="qr-drop flex cursor-pointer flex-col items-center gap-1.5 rounded-[10px]
              border border-dashed border-line p-5 text-center hover:border-accent"
       @click="picker?.click()"
@@ -79,8 +86,9 @@
 </template>
 
 <script setup>
-import { ref, useTemplateRef } from 'vue'
-import { downscaleToDataUrl } from '../lib/image.js'
+import { ref, onBeforeUnmount, useTemplateRef } from 'vue'
+import { validateUpload } from '../lib/image.js'
+import QrCropper from './QrCropper.vue'
 
 defineProps({
   image: { type: String, default: '' },
@@ -92,14 +100,33 @@ const emit = defineEmits(['update'])
 const picker = useTemplateRef('picker')
 const error = ref('')
 
-async function accept (file) {
+// An object URL rather than a data URL: the cropper only needs to display the
+// picture, and this avoids holding a multi-megabyte base64 string in memory.
+const cropSrc = ref('')
+
+function accept (file) {
   error.value = ''
   try {
-    emit('update', 'image', await downscaleToDataUrl(file))
+    validateUpload(file)
   } catch (problem) {
     error.value = problem.message
+    return
   }
+  closeCropper()
+  cropSrc.value = URL.createObjectURL(file)
 }
+
+function closeCropper () {
+  if (cropSrc.value) URL.revokeObjectURL(cropSrc.value)
+  cropSrc.value = ''
+}
+
+function onCrop (dataUrl) {
+  closeCropper()
+  emit('update', 'image', dataUrl)
+}
+
+onBeforeUnmount(closeCropper)
 
 function onPick (event) {
   const file = event.target.files?.[0]
