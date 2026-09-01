@@ -1,7 +1,7 @@
 import { ref, computed, watch, onScopeDispose } from 'vue'
 import { solve, MAX_ORDERS } from '../lib/solver.js'
 import { analysePlan, cheapestOrderCount, planCost } from '../lib/plan.js'
-import { loadState, saveState } from '../lib/storage.js'
+import { loadState, saveState, loadQr, saveQr } from '../lib/storage.js'
 import {
   DEFAULT_ITEMS,
   DEFAULT_VOUCHERS,
@@ -37,6 +37,10 @@ export function useSplitter () {
   // 0 means "whatever is cheapest"; anything else is a plan the user picked.
   const chosenOrderCount = ref(stored?.chosenOrderCount ?? 0)
   const solving = ref(false)
+
+  const storedQr = loadQr()
+  const qrImage = ref(storedQr?.image ?? '')
+  const qrPayee = ref(storedQr?.payee ?? '')
 
   function snapshot () {
     return {
@@ -87,9 +91,24 @@ export function useSplitter () {
     }, PERSIST_DEBOUNCE_MS)
   }, { deep: true })
 
+  // The QR lives under its own key on its own watcher. It is around 100 KB, and
+  // folding it into the state record would rewrite that blob on every keystroke.
+  let qrTimer = null
+
+  watch([qrImage, qrPayee], () => {
+    if (qrTimer) clearTimeout(qrTimer)
+    qrTimer = setTimeout(() => {
+      qrTimer = null
+      persistFailed.value = qrImage.value
+        ? !saveQr({ image: qrImage.value, payee: qrPayee.value })
+        : !saveQr(null)
+    }, PERSIST_DEBOUNCE_MS)
+  })
+
   onScopeDispose(() => {
     if (timer) clearTimeout(timer)
     if (persistTimer) clearTimeout(persistTimer)
+    if (qrTimer) clearTimeout(qrTimer)
   })
 
   const run = computed(() => solve(solverInput.value))
@@ -155,6 +174,11 @@ export function useSplitter () {
     deliveryFee.value = DEFAULT_DELIVERY_FEE
   }
 
+  function setQr (field, value) {
+    if (field === 'image') qrImage.value = value
+    else qrPayee.value = value
+  }
+
   function updateVoucher (index, field, value) {
     vouchers.value[index][field] = value
   }
@@ -192,6 +216,8 @@ export function useSplitter () {
     solving,
     isExample,
     persistFailed,
+    qrImage,
+    qrPayee,
     // derived
     run,
     plan,
@@ -207,6 +233,7 @@ export function useSplitter () {
     removeItem,
     clearItems,
     loadExample,
+    setQr,
     updateVoucher,
     addVoucher,
     removeVoucher,

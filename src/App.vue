@@ -66,6 +66,12 @@
             </template>
           </VoucherEditor>
         </div>
+
+        <PaymentQr
+          :image="qrImage"
+          :payee="qrPayee"
+          @update="setQr"
+        />
       </div>
 
       <div class="column-output @container/output">
@@ -104,6 +110,7 @@ import { useSplitter } from "./composables/useSplitter.js";
 import { buildSummary } from "./lib/plan.js";
 import ItemsEditor from "./components/ItemsEditor.vue";
 import VoucherEditor from "./components/VoucherEditor.vue";
+import PaymentQr from "./components/PaymentQr.vue";
 import SplitComparison from "./components/SplitComparison.vue";
 import NearMissWarning from "./components/NearMissWarning.vue";
 import PlanView from "./components/PlanView.vue";
@@ -118,6 +125,8 @@ const {
   solving,
   isExample,
   persistFailed,
+  qrImage,
+  qrPayee,
   run,
   plan,
   comparison,
@@ -129,6 +138,7 @@ const {
   removeItem,
   clearItems,
   loadExample,
+  setQr,
   updateVoucher,
   addVoucher,
   removeVoucher,

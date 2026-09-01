@@ -5,6 +5,7 @@ import App from '../src/App.vue'
 import ItemsEditor from '../src/components/ItemsEditor.vue'
 import SplitComparison from '../src/components/SplitComparison.vue'
 import NearMissWarning from '../src/components/NearMissWarning.vue'
+import PaymentQr from '../src/components/PaymentQr.vue'
 import { useSplitter } from '../src/composables/useSplitter.js'
 import { STATE_KEY, SCHEMA_VERSION } from '../src/lib/storage.js'
 
@@ -287,5 +288,33 @@ describe('useSplitter persistence', () => {
     splitter.loadExample()
     expect(splitter.items.value).toHaveLength(5)
     expect(splitter.items.value[0].name).toBe('Nasi Lemak Ayam')
+  })
+})
+
+describe('PaymentQr', () => {
+  const PNG = 'data:image/png;base64,iVBORw0KGgo='
+
+  it('invites an upload when there is no QR yet', () => {
+    const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
+    expect(wrapper.find('.qr-preview').exists()).toBe(false)
+    expect(wrapper.find('.qr-drop').exists()).toBe(true)
+  })
+
+  it('previews a stored QR and offers to remove it', async () => {
+    const wrapper = mount(PaymentQr, { props: { image: PNG, payee: 'Amin' } })
+    expect(wrapper.find('.qr-preview').attributes('src')).toBe(PNG)
+    await wrapper.find('.qr-remove').trigger('click')
+    expect(wrapper.emitted('update')).toEqual([['image', '']])
+  })
+
+  it('reports a payee edit upward instead of mutating the prop', async () => {
+    const wrapper = mount(PaymentQr, { props: { image: PNG, payee: '' } })
+    await wrapper.find('.qr-payee').setValue('Amin')
+    expect(wrapper.emitted('update')).toEqual([['payee', 'Amin']])
+  })
+
+  it('says plainly that the QR never leaves the browser', () => {
+    const wrapper = mount(PaymentQr, { props: { image: '', payee: '' } })
+    expect(wrapper.text()).toContain('never uploaded')
   })
 })
