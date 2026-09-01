@@ -1,6 +1,7 @@
 import { ref, computed, watch, onScopeDispose } from 'vue'
 import { solve, MAX_ORDERS } from '../lib/solver.js'
 import { analysePlan, cheapestOrderCount, planCost } from '../lib/plan.js'
+import { loadState, saveState } from '../lib/storage.js'
 import {
   DEFAULT_ITEMS,
   DEFAULT_VOUCHERS,
@@ -9,6 +10,7 @@ import {
 } from '../lib/defaults.js'
 
 const SOLVE_DEBOUNCE_MS = 220
+const PERSIST_DEBOUNCE_MS = 400
 
 const blankItem = () => ({ name: '', who: '', price: '', qty: '1' })
 const blankVoucher = () => ({ min: '', off: '' })
@@ -21,13 +23,19 @@ const blankVoucher = () => ({ min: '', off: '' })
  * adding a dependency - reach for Pinia if this ever grows a second route.
  */
 export function useSplitter () {
-  const deliveryFee = ref(DEFAULT_DELIVERY_FEE)
-  const items = ref(DEFAULT_ITEMS.map(item => ({ ...item })))
-  const vouchers = ref(DEFAULT_VOUCHERS.map(voucher => ({ ...voucher })))
-  const deliveryVouchers = ref(DEFAULT_DELIVERY_VOUCHERS.map(voucher => ({ ...voucher })))
+  const stored = loadState()
+  const isExample = ref(stored === null)
+  const persistFailed = ref(false)
+
+  const deliveryFee = ref(stored?.deliveryFee ?? DEFAULT_DELIVERY_FEE)
+  const items = ref(stored?.items ?? DEFAULT_ITEMS.map(item => ({ ...item })))
+  const vouchers = ref(stored?.vouchers ?? DEFAULT_VOUCHERS.map(voucher => ({ ...voucher })))
+  const deliveryVouchers = ref(
+    stored?.deliveryVouchers ?? DEFAULT_DELIVERY_VOUCHERS.map(voucher => ({ ...voucher }))
+  )
 
   // 0 means "whatever is cheapest"; anything else is a plan the user picked.
-  const chosenOrderCount = ref(0)
+  const chosenOrderCount = ref(stored?.chosenOrderCount ?? 0)
   const solving = ref(false)
 
   function snapshot () {
@@ -55,8 +63,33 @@ export function useSplitter () {
     }, SOLVE_DEBOUNCE_MS)
   }, { deep: true })
 
+  // Persistence gets its own timer rather than sharing the solve debounce -
+  // solving and saving have different cadences.
+  //
+  // A watch does not fire on setup, so nothing is written until the user
+  // actually edits something. That is what stops a first-time visitor who
+  // reloads without touching anything from having the example basket saved as
+  // if it were their own.
+  let persistTimer = null
+
+  watch([items, vouchers, deliveryVouchers, deliveryFee, chosenOrderCount], () => {
+    isExample.value = false
+    if (persistTimer) clearTimeout(persistTimer)
+    persistTimer = setTimeout(() => {
+      persistTimer = null
+      persistFailed.value = !saveState({
+        items: items.value,
+        vouchers: vouchers.value,
+        deliveryVouchers: deliveryVouchers.value,
+        deliveryFee: deliveryFee.value,
+        chosenOrderCount: chosenOrderCount.value
+      })
+    }, PERSIST_DEBOUNCE_MS)
+  }, { deep: true })
+
   onScopeDispose(() => {
     if (timer) clearTimeout(timer)
+    if (persistTimer) clearTimeout(persistTimer)
   })
 
   const run = computed(() => solve(solverInput.value))
@@ -109,6 +142,19 @@ export function useSplitter () {
     if (items.value.length === 0) items.value.push(blankItem())
   }
 
+  // Items change every order; the voucher list rarely does. Clearing keeps the
+  // vouchers, the delivery fee and the QR.
+  function clearItems () {
+    items.value = [blankItem()]
+  }
+
+  function loadExample () {
+    items.value = DEFAULT_ITEMS.map(item => ({ ...item }))
+    vouchers.value = DEFAULT_VOUCHERS.map(voucher => ({ ...voucher }))
+    deliveryVouchers.value = DEFAULT_DELIVERY_VOUCHERS.map(voucher => ({ ...voucher }))
+    deliveryFee.value = DEFAULT_DELIVERY_FEE
+  }
+
   function updateVoucher (index, field, value) {
     vouchers.value[index][field] = value
   }
@@ -144,6 +190,8 @@ export function useSplitter () {
     vouchers,
     deliveryVouchers,
     solving,
+    isExample,
+    persistFailed,
     // derived
     run,
     plan,
@@ -157,6 +205,8 @@ export function useSplitter () {
     updateItem,
     addItem,
     removeItem,
+    clearItems,
+    loadExample,
     updateVoucher,
     addVoucher,
     removeVoucher,

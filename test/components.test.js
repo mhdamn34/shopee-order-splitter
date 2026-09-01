@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { nextTick, effectScope } from 'vue'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import ItemsEditor from '../src/components/ItemsEditor.vue'
 import SplitComparison from '../src/components/SplitComparison.vue'
 import NearMissWarning from '../src/components/NearMissWarning.vue'
+import { useSplitter } from '../src/composables/useSplitter.js'
+import { STATE_KEY, SCHEMA_VERSION } from '../src/lib/storage.js'
 
 describe('ItemsEditor', () => {
   const items = [{ name: 'Teh Ais', who: '', price: '4.50', qty: '2' }]
@@ -188,5 +190,81 @@ describe('App', () => {
   it('shows free delivery on the order that earns it', () => {
     const wrapper = mount(App)
     expect(wrapper.text()).toContain('Delivery free (min RM25.00)')
+  })
+})
+
+describe('useSplitter persistence', () => {
+  // The composable registers watchers, so it needs an owning scope. Scopes are
+  // collected rather than stopped inline, so an async test can await between
+  // creating the splitter and asserting on it.
+  const scopes = []
+
+  function makeSplitter () {
+    const scope = effectScope()
+    scopes.push(scope)
+    return scope.run(() => useSplitter())
+  }
+
+  beforeEach(() => localStorage.clear())
+  afterEach(() => {
+    scopes.splice(0).forEach(scope => scope.stop())
+    vi.useRealTimers()
+  })
+
+  it('seeds the example and flags it on a first visit', () => {
+    const splitter = makeSplitter()
+    expect(splitter.isExample.value).toBe(true)
+    expect(splitter.items.value[0].name).toBe('Nasi Lemak Ayam')
+  })
+
+  it('hydrates from storage instead, and does not flag an example', () => {
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      v: SCHEMA_VERSION,
+      items: [{ name: 'Kopi O', who: '', price: '3.90', qty: '1' }],
+      vouchers: [], deliveryVouchers: [], deliveryFee: '5.00', chosenOrderCount: 0
+    }))
+    const splitter = makeSplitter()
+    expect(splitter.isExample.value).toBe(false)
+    expect(splitter.items.value).toEqual([{ name: 'Kopi O', who: '', price: '3.90', qty: '1' }])
+  })
+
+  // Otherwise a first-time visitor who reloads without touching anything would
+  // have the example saved as if it were their own.
+  it('writes nothing until the first edit', async () => {
+    makeSplitter()
+    await nextTick()
+    expect(localStorage.getItem(STATE_KEY)).toBeNull()
+  })
+
+  it('writes the basket once an edit settles', async () => {
+    vi.useFakeTimers()
+    const splitter = makeSplitter()
+    splitter.updateItem(0, 'price', '9.99')
+    await nextTick()
+    vi.advanceTimersByTime(500)
+    expect(JSON.parse(localStorage.getItem(STATE_KEY)).items[0].price).toBe('9.99')
+  })
+
+  it('clears the example flag on any edit', async () => {
+    const splitter = makeSplitter()
+    splitter.updateItem(0, 'price', '9.99')
+    await nextTick()
+    expect(splitter.isExample.value).toBe(false)
+  })
+
+  it('clearItems leaves one blank row and keeps the vouchers', () => {
+    const splitter = makeSplitter()
+    const voucherCount = splitter.vouchers.value.length
+    splitter.clearItems()
+    expect(splitter.items.value).toEqual([{ name: '', who: '', price: '', qty: '1' }])
+    expect(splitter.vouchers.value).toHaveLength(voucherCount)
+  })
+
+  it('loadExample restores the demo basket', () => {
+    const splitter = makeSplitter()
+    splitter.clearItems()
+    splitter.loadExample()
+    expect(splitter.items.value).toHaveLength(5)
+    expect(splitter.items.value[0].name).toBe('Nasi Lemak Ayam')
   })
 })
