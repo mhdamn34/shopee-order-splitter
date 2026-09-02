@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import { nextTick, effectScope } from 'vue'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
@@ -495,14 +496,48 @@ describe('SiteFooter', () => {
   })
 })
 
+const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+// Base58Check: the last four bytes are a double-SHA256 of the rest. A single
+// mistyped character fails this, which is exactly the mistake that would send
+// donations somewhere unrecoverable.
+function base58CheckValid (address) {
+  if ([...address].some(char => !BASE58.includes(char))) return false
+
+  let num = 0n
+  for (const char of address) num = num * 58n + BigInt(BASE58.indexOf(char))
+
+  const raw = Buffer.from(num.toString(16).padStart(50, '0'), 'hex')
+  const payload = raw.subarray(0, 21)
+  const checksum = raw.subarray(21)
+
+  const once = createHash('sha256').update(payload).digest()
+  const twice = createHash('sha256').update(once).digest()
+
+  return checksum.equals(twice.subarray(0, 4))
+}
+
 describe('support config', () => {
   // A guard against a fabricated or half-pasted address reaching a commit.
-  it('ships with no wallet address, or with well-formed ones', () => {
+  it('ships only well-formed wallet entries', () => {
     WALLETS.forEach(wallet => {
       expect(wallet.label).toBeTruthy()
       expect(wallet.network).toBeTruthy()
       expect(wallet.address).toMatch(/^[A-Za-z0-9:]{12,}$/)
       expect(wallet.address).not.toMatch(/YOUR|EXAMPLE|PLACEHOLDER|xxx/i)
     })
+  })
+
+  it('has a valid checksum on every Base58Check address', () => {
+    WALLETS
+      .filter(wallet => /^[13]/.test(wallet.address))
+      .forEach(wallet => {
+        expect(base58CheckValid(wallet.address), `${wallet.label} ${wallet.address}`).toBe(true)
+      })
+  })
+
+  it('would reject a single mistyped character', () => {
+    // Same address with one character changed - the guard above must catch this.
+    expect(base58CheckValid('39Luy3SuXzAdabkhtzNfy1BekXpwLTQLpQ')).toBe(false)
   })
 })

@@ -14,4 +14,6 @@ export const COPYRIGHT_YEAR = 2026
  * Paste real addresses here, and check them character by character against the
  * wallet they came from before committing.
  */
-export const WALLETS = []
+export const WALLETS = [
+  { label: 'BTC', network: 'Bitcoin', address: '39Luy3SuXzAdabkhtzNfy1BekXpwLTQLpP' }
+]
