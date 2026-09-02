@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Find the cheapest way to split a Shopee food order across stacked vouchers",
+  "author": "mhdamin",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
