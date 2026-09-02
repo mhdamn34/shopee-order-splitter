@@ -114,6 +114,12 @@
         </template>
       </div>
     </div>
+
+    <SiteFooter
+      :holder="COPYRIGHT_HOLDER"
+      :year="COPYRIGHT_YEAR"
+      :wallets="WALLETS"
+    />
   </main>
 </template>
 
@@ -129,6 +135,8 @@ import NearMissWarning from "./components/NearMissWarning.vue";
 import PlanView from "./components/PlanView.vue";
 import PeopleSplit from "./components/PeopleSplit.vue";
 import ShareActions from "./components/ShareActions.vue";
+import SiteFooter from "./components/SiteFooter.vue";
+import { COPYRIGHT_HOLDER, COPYRIGHT_YEAR, WALLETS } from "./lib/support.js";
 
 const {
   deliveryFee,

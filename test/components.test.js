@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createHash } from 'node:crypto'
 import { nextTick, effectScope } from 'vue'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
@@ -8,6 +9,8 @@ import NearMissWarning from '../src/components/NearMissWarning.vue'
 import PaymentQr from '../src/components/PaymentQr.vue'
 import ShareActions from '../src/components/ShareActions.vue'
 import QrCropper from '../src/components/QrCropper.vue'
+import SiteFooter from '../src/components/SiteFooter.vue'
+import { WALLETS } from '../src/lib/support.js'
 import { useSplitter } from '../src/composables/useSplitter.js'
 import { STATE_KEY, SCHEMA_VERSION } from '../src/lib/storage.js'
 
@@ -451,5 +454,90 @@ describe('QrCropper', () => {
     await wrapper.find('.crop-image').trigger('load')
     await wrapper.find('.crop-use').trigger('click')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
+  })
+})
+
+describe('SiteFooter', () => {
+  const props = { holder: 'mhdamin', year: 2026, wallets: [] }
+
+  it('shows the copyright line', () => {
+    const wrapper = mount(SiteFooter, { props })
+    expect(wrapper.find('.copyright').text()).toContain('© 2026 mhdamin')
+  })
+
+  // Better nothing than a placeholder that looks like an address - crypto sent
+  // to the wrong place cannot be recovered.
+  it('renders no support block while no wallet is configured', () => {
+    const wrapper = mount(SiteFooter, { props })
+    expect(wrapper.find('.support').exists()).toBe(false)
+  })
+
+  it('lists each configured wallet', () => {
+    const wallets = [
+      { label: 'BTC', network: 'Bitcoin', address: 'bc1qexampleaddress' },
+      { label: 'ETH', network: 'Ethereum', address: '0xexampleaddress' }
+    ]
+    const wrapper = mount(SiteFooter, { props: { ...props, wallets } })
+    const rows = wrapper.findAll('.wallet')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('bc1qexampleaddress')
+  })
+
+  it('copies an address to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue()
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const wallets = [{ label: 'BTC', network: 'Bitcoin', address: 'bc1qexampleaddress' }]
+
+    const wrapper = mount(SiteFooter, { props: { ...props, wallets } })
+    await wrapper.find('.wallet-copy').trigger('click')
+
+    expect(writeText).toHaveBeenCalledWith('bc1qexampleaddress')
+    vi.unstubAllGlobals()
+  })
+})
+
+const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+// Base58Check: the last four bytes are a double-SHA256 of the rest. A single
+// mistyped character fails this, which is exactly the mistake that would send
+// donations somewhere unrecoverable.
+function base58CheckValid (address) {
+  if ([...address].some(char => !BASE58.includes(char))) return false
+
+  let num = 0n
+  for (const char of address) num = num * 58n + BigInt(BASE58.indexOf(char))
+
+  const raw = Buffer.from(num.toString(16).padStart(50, '0'), 'hex')
+  const payload = raw.subarray(0, 21)
+  const checksum = raw.subarray(21)
+
+  const once = createHash('sha256').update(payload).digest()
+  const twice = createHash('sha256').update(once).digest()
+
+  return checksum.equals(twice.subarray(0, 4))
+}
+
+describe('support config', () => {
+  // A guard against a fabricated or half-pasted address reaching a commit.
+  it('ships only well-formed wallet entries', () => {
+    WALLETS.forEach(wallet => {
+      expect(wallet.label).toBeTruthy()
+      expect(wallet.network).toBeTruthy()
+      expect(wallet.address).toMatch(/^[A-Za-z0-9:]{12,}$/)
+      expect(wallet.address).not.toMatch(/YOUR|EXAMPLE|PLACEHOLDER|xxx/i)
+    })
+  })
+
+  it('has a valid checksum on every Base58Check address', () => {
+    WALLETS
+      .filter(wallet => /^[13]/.test(wallet.address))
+      .forEach(wallet => {
+        expect(base58CheckValid(wallet.address), `${wallet.label} ${wallet.address}`).toBe(true)
+      })
+  })
+
+  it('would reject a single mistyped character', () => {
+    // Same address with one character changed - the guard above must catch this.
+    expect(base58CheckValid('39Luy3SuXzAdabkhtzNfy1BekXpwLTQLpQ')).toBe(false)
   })
 })

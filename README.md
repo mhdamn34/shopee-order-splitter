@@ -63,3 +63,15 @@ npm run preview
 ```
 
 **[How it works →](docs/how-it-works.md)** — the search, the layout, the styling.
+
+## Support
+
+This is free and always will be. If it saved you a few ringgit and you feel like
+sending some back, the wallet addresses are in the footer of the app.
+
+Check any address against the one shown in the app before sending. Crypto sent
+to a wrong address cannot be recovered.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Copyright © 2026 mhdamin.
