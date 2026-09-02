@@ -14,18 +14,29 @@ the plan change, tap a comparison row, share — is plenty.
 ## Converting
 
 ```bash
-ffmpeg -i demo.mov -vf "fps=12,scale=900:-1:flags=lanczos,palettegen" -y /tmp/pal.png
+ffmpeg -i demo.mov -vf "fps=10,scale=720:-1:flags=lanczos,palettegen" -y /tmp/pal.png
 ffmpeg -i demo.mov -i /tmp/pal.png \
-  -lavfi "fps=12,scale=900:-1:flags=lanczos[x];[x][1:v]paletteuse" -y docs/media/demo.gif
+  -lavfi "fps=10,scale=720:-1:flags=lanczos[x];[x][1:v]paletteuse" -y docs/media/demo.gif
 ```
 
 Two passes on purpose. A plain `ffmpeg -i demo.mov demo.gif` quantises to a
 generic 256-colour palette and comes out muddy; the first pass builds a palette
 from the actual footage instead.
 
-`fps=12` and `scale=900` are the two knobs. Drop either if the file is too big —
-GitHub will serve a large GIF, but anything past a few megabytes is slow to load
-on a phone.
+`fps` and `scale` are the two knobs, and duration is the third and largest. For
+scale, measured against a 1688x1414 23-second capture:
+
+| Settings | Size |
+| --- | --- |
+| 900px, 12fps | 6.0 MB |
+| **720px, 10fps** | **3.2 MB** |
+| 640px, 10fps | 2.8 MB |
+
+720 is the default here because GitHub renders README images at roughly 900px
+wide anyway, so the extra pixels cost bandwidth without showing up.
+
+Always re-encode from `demo.mov`, never from an existing `demo.gif` — going
+GIF to GIF quantises an already-quantised palette and the result smears.
 
 ## Checking the size
 
